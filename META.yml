@@ -1,10 +1,11 @@
 --- #YAML:1.0
 name:                Sort-ByExample
-version:             0.003
-abstract:            ~
+version:             0.004
+abstract:            sort lists to look like the example you provide
 license:             perl
-author:              ~
-generated_by:        ExtUtils::MakeMaker version 6.42
+author:              
+    - Ricardo SIGNES <rjbs@cpan.org>
+generated_by:        ExtUtils::MakeMaker version 6.44
 distribution_type:   module
 requires:     
     Params::Util:                  0
