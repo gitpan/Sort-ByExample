@@ -1,15 +1,23 @@
 --- #YAML:1.0
-name:                Sort-ByExample
-version:             0.004
-abstract:            sort lists to look like the example you provide
-license:             perl
-author:              
-    - Ricardo SIGNES <rjbs@cpan.org>
-generated_by:        ExtUtils::MakeMaker version 6.44
-distribution_type:   module
-requires:     
-    Params::Util:                  0
-    Sub::Exporter:                 0
+name:               Sort-ByExample
+version:            0.005
+abstract:           sort lists to look like the example you provide
+author:
+    - Ricardo Signes <rjbs@cpan.org>
+license:            perl
+distribution_type:  module
+configure_requires:
+    ExtUtils::MakeMaker:  0
+build_requires:
+    ExtUtils::MakeMaker:  0
+requires:
+    Params::Util:   0
+    Sub::Exporter:  0
+no_index:
+    directory:
+        - t
+        - inc
+generated_by:       ExtUtils::MakeMaker version 6.55_02
 meta-spec:
-    url:     http://module-build.sourceforge.net/META-spec-v1.3.html
-    version: 1.3
+    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
+    version:  1.4
