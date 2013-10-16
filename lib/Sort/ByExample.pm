@@ -1,145 +1,21 @@
 use strict;
 use warnings;
-
 package Sort::ByExample;
+{
+  $Sort::ByExample::VERSION = '0.006';
+}
+# ABSTRACT: sort lists to look like the example you provide
 
-=head1 NAME
-
-Sort::ByExample - sort lists to look like the example you provide
-
-=head1 VERSION
-
-version 0.005
-
-=cut
-
-our $VERSION = '0.005';
-
-=head1 SYNOPSIS
-
-  use Sort::ByExample
-   cmp    => { -as => 'by_eng',   example => [qw(first second third fourth)] },
-   sorter => { -as => 'eng_sort', example => [qw(first second third fourth)] };
-
-  my @output = eng_sort(qw(second third unknown fourth first));
-  # --> first second third fourth unknown
-
-  # ...or...
-
-  my @output = sort by_eng qw(second third unknown fourth first);
-  # --> first second third fourth unknown
-
-  # ...or...
-
-  my $sorter = Sort::ByExample::sbe(\@example);
-  my @output = $sorter->( qw(second third unknown fourth first) );
-  # --> first second third fourth unknown
-
-=head1 DESCRIPTION
-
-Sometimes, you need to sort things in a pretty arbitrary order.  You know that
-you might encounter any of a list of values, and you have an idea what order
-those values go in.  That order is arbitrary, as far as actual automatic
-comparison goes, but that's the order you want.
-
-Sort::ByExample makes this easy:  you give it a list of example input it should
-expect, pre-sorted, and it will sort things that way.  If you want, you can
-provide a fallback sub for sorting unknown or equally-positioned data.
-
-=cut
 
 use Params::Util qw(_HASHLIKE _ARRAYLIKE _CODELIKE);
 use Sub::Exporter -setup => {
-  exports => { 
+  exports => {
     sbe    => undef,
     cmp    => \'_build_cmp',
     sorter => \'_build_sorter',
   },
 };
 
-=head1 METHODS
-
-=head2 sorter
-
-  my $sorter = Sort::ByExample->sorter($example, $fallback);
-  my $sorter = Sort::ByExample->sorter($example, \%arg);
-
-The sorter method returns a subroutine that will sort lists to look more like
-the example list.
-
-C<$example> may be a reference to an array, in which case input will be sorted
-into the same order as the data in the array reference.  Input not found in the
-example will be found at the end of the output, sorted by the fallback sub if
-given (see below).
-
-Alternately, the example may be a reference to a hash.  Values are used to
-provide sort orders for input values.  Input values with the same sort value
-are sorted by the fallback sub, if given.
-
-If given named arguments as C<%arg>, valid arguments are:
-
-  fallback - a sub to sort data 
-  xform    - a sub to transform each item into the key to sort
-
-If no other named arguments are needed, the fallback sub may be given in place
-of the arg hashref.
-
-The fallback sub should accept two inputs and return either 1, 0, or -1, like a
-normal sorting routine.  The data to be sorted are passed as parameters.  For
-uninteresting reasons, C<$a> and C<$b> can't be used.
-
-The xform sub should accept one argument and return the data by which to sort
-that argument.  In other words, to sort a group of athletes by their medals:
-
-  my $sorter = sbe(
-    [ qw(Gold Silver Bronze) ],
-    {
-      xform => sub { $_[0]->medal_metal },
-    },
-  );
-
-If both xform and fallback are given, then four arguments are passed to
-fallback:
-
-  a_xform, b_xform, a_original, b_original
-
-=head2 cmp
-
-  my $comparitor = Sort::ByExample->cmp($example, \%arg);
-
-This routine expects the same sort of arguments as C<L</sorter>>, but returns a
-subroutine that behaves like a C<L<sort|perlfunc/sort>> comparitor.  It will
-take two arguments and return 1, 0, or -1.
-
-C<cmp> I<must not> be given an C<xform> argument or an exception will be
-raised.  This behavior may change in the future, but because a
-single-comparison comparitor cannot efficiently perform a L<Schwartzian
-transform|http://en.wikipedia.org/wiki/Schwartzian_transform>, using a
-purpose-build C<L</sorter>> is a better idea.
-
-=head1 EXPORTS
-
-=head2 sbe
-
-C<sbe> behaves just like C<L</sorter>>, but is a function rather than a method.
-It may be imported by request.
-
-=head2 sorter
-
-The C<sorter> export builds a function that behaves like the C<sorter> method.
-
-=head2 cmp
-
-The C<cmp> export builds a function that behaves like the C<cmp> method.
-Because C<sort> requires a named sub, importing C<cmp> can be very useful:
-
-  use Sort::ByExample
-   cmp    => { -as => 'by_eng',   example => [qw(first second third fourth)] },
-
-  my @output = sort by_eng qw(second third unknown fourth first);
-  # --> first second third fourth unknown
-
-=cut
 
 sub sbe { __PACKAGE__->sorter(@_) }
 
@@ -229,23 +105,153 @@ sub _build_cmp {
   $self->cmp($example, $arg);
 }
 
+
+1;
+
+__END__
+
+=pod
+
+=head1 NAME
+
+Sort::ByExample - sort lists to look like the example you provide
+
+=head1 VERSION
+
+version 0.006
+
+=head1 SYNOPSIS
+
+  use Sort::ByExample
+   cmp    => { -as => 'by_eng',   example => [qw(first second third fourth)] },
+   sorter => { -as => 'eng_sort', example => [qw(first second third fourth)] };
+
+  my @output = eng_sort(qw(second third unknown fourth first));
+  # --> first second third fourth unknown
+
+  # ...or...
+
+  my @output = sort by_eng qw(second third unknown fourth first);
+  # --> first second third fourth unknown
+
+  # ...or...
+
+  my $sorter = Sort::ByExample::sbe(\@example);
+  my @output = $sorter->( qw(second third unknown fourth first) );
+  # --> first second third fourth unknown
+
+=head1 DESCRIPTION
+
+Sometimes, you need to sort things in a pretty arbitrary order.  You know that
+you might encounter any of a list of values, and you have an idea what order
+those values go in.  That order is arbitrary, as far as actual automatic
+comparison goes, but that's the order you want.
+
+Sort::ByExample makes this easy:  you give it a list of example input it should
+expect, pre-sorted, and it will sort things that way.  If you want, you can
+provide a fallback sub for sorting unknown or equally-positioned data.
+
+=head1 METHODS
+
+=head2 sorter
+
+  my $sorter = Sort::ByExample->sorter($example, $fallback);
+  my $sorter = Sort::ByExample->sorter($example, \%arg);
+
+The sorter method returns a subroutine that will sort lists to look more like
+the example list.
+
+C<$example> may be a reference to an array, in which case input will be sorted
+into the same order as the data in the array reference.  Input not found in the
+example will be found at the end of the output, sorted by the fallback sub if
+given (see below).
+
+Alternately, the example may be a reference to a hash.  Values are used to
+provide sort orders for input values.  Input values with the same sort value
+are sorted by the fallback sub, if given.
+
+If given named arguments as C<%arg>, valid arguments are:
+
+  fallback - a sub to sort data 
+  xform    - a sub to transform each item into the key to sort
+
+If no other named arguments are needed, the fallback sub may be given in place
+of the arg hashref.
+
+The fallback sub should accept two inputs and return either 1, 0, or -1, like a
+normal sorting routine.  The data to be sorted are passed as parameters.  For
+uninteresting reasons, C<$a> and C<$b> can't be used.
+
+The xform sub should accept one argument and return the data by which to sort
+that argument.  In other words, to sort a group of athletes by their medals:
+
+  my $sorter = sbe(
+    [ qw(Gold Silver Bronze) ],
+    {
+      xform => sub { $_[0]->medal_metal },
+    },
+  );
+
+If both xform and fallback are given, then four arguments are passed to
+fallback:
+
+  a_xform, b_xform, a_original, b_original
+
+=head2 cmp
+
+  my $comparitor = Sort::ByExample->cmp($example, \%arg);
+
+This routine expects the same sort of arguments as C<L</sorter>>, but returns a
+subroutine that behaves like a C<L<sort|perlfunc/sort>> comparitor.  It will
+take two arguments and return 1, 0, or -1.
+
+C<cmp> I<must not> be given an C<xform> argument or an exception will be
+raised.  This behavior may change in the future, but because a
+single-comparison comparitor cannot efficiently perform a L<Schwartzian
+transform|http://en.wikipedia.org/wiki/Schwartzian_transform>, using a
+purpose-build C<L</sorter>> is a better idea.
+
+=head1 EXPORTS
+
+=head2 sbe
+
+C<sbe> behaves just like C<L</sorter>>, but is a function rather than a method.
+It may be imported by request.
+
+=head2 sorter
+
+The C<sorter> export builds a function that behaves like the C<sorter> method.
+
+=head2 cmp
+
+The C<cmp> export builds a function that behaves like the C<cmp> method.
+Because C<sort> requires a named sub, importing C<cmp> can be very useful:
+
+  use Sort::ByExample
+   cmp    => { -as => 'by_eng',   example => [qw(first second third fourth)] },
+
+  my @output = sort by_eng qw(second third unknown fourth first);
+  # --> first second third fourth unknown
+
 =head1 TODO
 
-=over
+=over 4
 
-=item * provide a way to say "these things occur after any unknowns"
+=item *
+
+provide a way to say "these things occur after any unknowns"
 
 =back
 
 =head1 AUTHOR
 
-Ricardo Signes, E<lt>rjbs@cpan.orgE<gt>
+Ricardo SIGNES <rjbs@cpan.org>
 
-=head1 COPYRIGHT
+=head1 COPYRIGHT AND LICENSE
 
-(C) 2007 - 2010, Ricardo Signes.  This is free software, available under the
-same terms as Perl itself.
+This software is copyright (c) 2007 by Ricardo SIGNES.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
 =cut
-
-1;
