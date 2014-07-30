@@ -1,11 +1,74 @@
 use strict;
 use warnings;
 package Sort::ByExample;
-{
-  $Sort::ByExample::VERSION = '0.006';
-}
 # ABSTRACT: sort lists to look like the example you provide
-
+$Sort::ByExample::VERSION = '0.007';
+#pod =head1 SYNOPSIS
+#pod
+#pod   use Sort::ByExample
+#pod    cmp    => { -as => 'by_eng',   example => [qw(first second third fourth)] },
+#pod    sorter => { -as => 'eng_sort', example => [qw(first second third fourth)] };
+#pod
+#pod   my @output = eng_sort(qw(second third unknown fourth first));
+#pod   # --> first second third fourth unknown
+#pod
+#pod   # ...or...
+#pod
+#pod   my @output = sort by_eng qw(second third unknown fourth first);
+#pod   # --> first second third fourth unknown
+#pod
+#pod   # ...or...
+#pod
+#pod   my $sorter = Sort::ByExample::sbe(\@example);
+#pod   my @output = $sorter->( qw(second third unknown fourth first) );
+#pod   # --> first second third fourth unknown
+#pod
+#pod   # ...or...
+#pod
+#pod   my $example = [ qw(charlie alfa bravo) ];
+#pod   my @input   = (
+#pod     { name => 'Bertrand', codename => 'bravo'   },
+#pod     { name => 'Dracover', codename => 'zulu',   },
+#pod     { name => 'Cheswick', codename => 'charlie' },
+#pod     { name => 'Elbereth', codename => 'yankee'  },
+#pod     { name => 'Algernon', codename => 'alfa'    },
+#pod   );
+#pod
+#pod   my $fallback = sub {
+#pod     my ($x, $y) = @_;
+#pod     return $x cmp $y;
+#pod   };
+#pod
+#pod   my $sorter = sbe(
+#pod     $example,
+#pod     {
+#pod       fallback => $fallback,
+#pod       xform    => sub { $_[0]->{codename} },
+#pod     },
+#pod   );
+#pod
+#pod   my @output = $sorter->(@input);
+#pod
+#pod   # --> (
+#pod   #       { name => 'Cheswick', codename => 'charlie' },
+#pod   #       { name => 'Algernon', codename => 'alfa'    },
+#pod   #       { name => 'Bertrand', codename => 'bravo'   },
+#pod   #       { name => 'Elbereth', codename => 'yankee'  },
+#pod   #       { name => 'Dracover', codename => 'zulu',   },
+#pod   #     );
+#pod
+#pod =head1 DESCRIPTION
+#pod
+#pod Sometimes, you need to sort things in a pretty arbitrary order.  You know that
+#pod you might encounter any of a list of values, and you have an idea what order
+#pod those values go in.  That order is arbitrary, as far as actual automatic
+#pod comparison goes, but that's the order you want.
+#pod
+#pod Sort::ByExample makes this easy:  you give it a list of example input it should
+#pod expect, pre-sorted, and it will sort things that way.  If you want, you can
+#pod provide a fallback sub for sorting unknown or equally-positioned data.
+#pod
+#pod =cut
 
 use Params::Util qw(_HASHLIKE _ARRAYLIKE _CODELIKE);
 use Sub::Exporter -setup => {
@@ -16,6 +79,87 @@ use Sub::Exporter -setup => {
   },
 };
 
+#pod =method sorter
+#pod
+#pod   my $sorter = Sort::ByExample->sorter($example, $fallback);
+#pod   my $sorter = Sort::ByExample->sorter($example, \%arg);
+#pod
+#pod The sorter method returns a subroutine that will sort lists to look more like
+#pod the example list.
+#pod
+#pod C<$example> may be a reference to an array, in which case input will be sorted
+#pod into the same order as the data in the array reference.  Input not found in the
+#pod example will be found at the end of the output, sorted by the fallback sub if
+#pod given (see below).
+#pod
+#pod Alternately, the example may be a reference to a hash.  Values are used to
+#pod provide sort orders for input values.  Input values with the same sort value
+#pod are sorted by the fallback sub, if given.
+#pod
+#pod If given named arguments as C<%arg>, valid arguments are:
+#pod
+#pod   fallback - a sub to sort data 
+#pod   xform    - a sub to transform each item into the key to sort
+#pod
+#pod If no other named arguments are needed, the fallback sub may be given in place
+#pod of the arg hashref.
+#pod
+#pod The fallback sub should accept two inputs and return either 1, 0, or -1, like a
+#pod normal sorting routine.  The data to be sorted are passed as parameters.  For
+#pod uninteresting reasons, C<$a> and C<$b> can't be used.
+#pod
+#pod The xform sub should accept one argument and return the data by which to sort
+#pod that argument.  In other words, to sort a group of athletes by their medals:
+#pod
+#pod   my $sorter = sbe(
+#pod     [ qw(Gold Silver Bronze) ],
+#pod     {
+#pod       xform => sub { $_[0]->medal_metal },
+#pod     },
+#pod   );
+#pod
+#pod If both xform and fallback are given, then four arguments are passed to
+#pod fallback:
+#pod
+#pod   a_xform, b_xform, a_original, b_original
+#pod
+#pod =method cmp
+#pod
+#pod   my $comparitor = Sort::ByExample->cmp($example, \%arg);
+#pod
+#pod This routine expects the same sort of arguments as C<L</sorter>>, but returns a
+#pod subroutine that behaves like a C<L<sort|perlfunc/sort>> comparitor.  It will
+#pod take two arguments and return 1, 0, or -1.
+#pod
+#pod C<cmp> I<must not> be given an C<xform> argument or an exception will be
+#pod raised.  This behavior may change in the future, but because a
+#pod single-comparison comparitor cannot efficiently perform a L<Schwartzian
+#pod transform|http://en.wikipedia.org/wiki/Schwartzian_transform>, using a
+#pod purpose-build C<L</sorter>> is a better idea.
+#pod
+#pod =head1 EXPORTS
+#pod
+#pod =head2 sbe
+#pod
+#pod C<sbe> behaves just like C<L</sorter>>, but is a function rather than a method.
+#pod It may be imported by request.
+#pod
+#pod =head2 sorter
+#pod
+#pod The C<sorter> export builds a function that behaves like the C<sorter> method.
+#pod
+#pod =head2 cmp
+#pod
+#pod The C<cmp> export builds a function that behaves like the C<cmp> method.
+#pod Because C<sort> requires a named sub, importing C<cmp> can be very useful:
+#pod
+#pod   use Sort::ByExample
+#pod    cmp    => { -as => 'by_eng',   example => [qw(first second third fourth)] };
+#pod
+#pod   my @output = sort by_eng qw(second third unknown fourth first);
+#pod   # --> first second third fourth unknown
+#pod
+#pod =cut
 
 sub sbe { __PACKAGE__->sorter(@_) }
 
@@ -105,6 +249,12 @@ sub _build_cmp {
   $self->cmp($example, $arg);
 }
 
+#pod =head1 TODO
+#pod
+#pod =for :list
+#pod * provide a way to say "these things occur after any unknowns"
+#pod
+#pod =cut
 
 1;
 
@@ -112,13 +262,15 @@ __END__
 
 =pod
 
+=encoding UTF-8
+
 =head1 NAME
 
 Sort::ByExample - sort lists to look like the example you provide
 
 =head1 VERSION
 
-version 0.006
+version 0.007
 
 =head1 SYNOPSIS
 
@@ -139,6 +291,40 @@ version 0.006
   my $sorter = Sort::ByExample::sbe(\@example);
   my @output = $sorter->( qw(second third unknown fourth first) );
   # --> first second third fourth unknown
+
+  # ...or...
+
+  my $example = [ qw(charlie alfa bravo) ];
+  my @input   = (
+    { name => 'Bertrand', codename => 'bravo'   },
+    { name => 'Dracover', codename => 'zulu',   },
+    { name => 'Cheswick', codename => 'charlie' },
+    { name => 'Elbereth', codename => 'yankee'  },
+    { name => 'Algernon', codename => 'alfa'    },
+  );
+
+  my $fallback = sub {
+    my ($x, $y) = @_;
+    return $x cmp $y;
+  };
+
+  my $sorter = sbe(
+    $example,
+    {
+      fallback => $fallback,
+      xform    => sub { $_[0]->{codename} },
+    },
+  );
+
+  my @output = $sorter->(@input);
+
+  # --> (
+  #       { name => 'Cheswick', codename => 'charlie' },
+  #       { name => 'Algernon', codename => 'alfa'    },
+  #       { name => 'Bertrand', codename => 'bravo'   },
+  #       { name => 'Elbereth', codename => 'yankee'  },
+  #       { name => 'Dracover', codename => 'zulu',   },
+  #     );
 
 =head1 DESCRIPTION
 
@@ -228,7 +414,7 @@ The C<cmp> export builds a function that behaves like the C<cmp> method.
 Because C<sort> requires a named sub, importing C<cmp> can be very useful:
 
   use Sort::ByExample
-   cmp    => { -as => 'by_eng',   example => [qw(first second third fourth)] },
+   cmp    => { -as => 'by_eng',   example => [qw(first second third fourth)] };
 
   my @output = sort by_eng qw(second third unknown fourth first);
   # --> first second third fourth unknown
